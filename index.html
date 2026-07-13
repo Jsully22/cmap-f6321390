@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="robots" content="noindex, nofollow, noarchive" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Protected report</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.31.0/tabler-icons.min.css" />
+<style>
+:root{
+ --surface-2:#ffffff; --surface-1:#f5f4f0; --surface-0:#f0efec;
+ --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#898781;
+ --border:rgba(11,11,11,.10); --border-strong:rgba(11,11,11,.22);
+ --fill-primary:#0b0b0b; --on-primary:#ffffff; --radius:8px;
+ --shadow-popover:0 8px 24px rgba(0,0,0,.12),0 2px 6px rgba(0,0,0,.08);
+ --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0; background:#ffffff; color:var(--text-primary); font-family:var(--font-sans); -webkit-font-smoothing:antialiased;}
+.wrap{max-width:980px; margin:0 auto; padding:28px 32px 40px;}
+h1{font-size:24px; font-weight:500; margin:0 0 4px;}
+.sub{font-size:14px; color:var(--text-secondary); margin:0 0 20px;}
+button{font-family:inherit; border:0.5px solid var(--border-strong); background:transparent; color:var(--text-primary); border-radius:var(--radius); cursor:pointer;}
+.foot{margin-top:20px; font-size:12px; color:var(--text-muted); line-height:1.7; border-top:0.5px solid var(--border); padding-top:14px;}
+#gate{max-width:420px; margin:12vh auto 0; padding:0 24px; text-align:left;}
+#gate .card{background:var(--surface-1); border-radius:12px; padding:28px 26px;}
+#gate h1{font-size:20px; margin:0 0 8px;}
+#gate p{font-size:14px; color:var(--text-secondary); margin:0 0 18px; line-height:1.6;}
+#gate input{width:100%; height:40px; font-size:15px; padding:0 12px; border:0.5px solid var(--border-strong); border-radius:var(--radius); background:#fff; margin-bottom:12px;}
+#gate button{width:100%; height:40px; font-size:15px; background:var(--fill-primary); color:var(--on-primary); border-color:var(--fill-primary);}
+#err{color:#a32d2d; font-size:13px; margin-top:10px; min-height:18px;}
+</style>
+</head>
+<body>
+<div id="gate">
+  <div class="card">
+    <h1>Password required</h1>
+    <p>This report is password-protected. Enter the password to view it.</p>
+    <input id="pw" type="password" placeholder="Password" autocomplete="off" autofocus />
+    <button id="unlock">Unlock</button>
+    <div id="err"></div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+ <div class="wrap">
+  <h1 id="h1"></h1>
+  <p class="sub" id="sub"></p>
+  <div id="kpis" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:1rem;"></div>
+  <div style="font-size:13px; color:var(--text-secondary); margin-bottom:6px;">Customer definition</div>
+  <div id="defSel" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:6px;"></div>
+  <div id="defNote" style="font-size:12px; color:var(--text-muted); margin-bottom:1rem;"></div>
+  <div style="font-size:13px; color:var(--text-secondary); margin-bottom:6px;">Color states by</div>
+  <div id="metricSel" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:0.75rem;"></div>
+  <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:0.5rem;">
+    <div id="legend" style="display:flex; align-items:center; gap:2px; font-size:12px; color:var(--text-secondary);"></div>
+    <span id="metricNote" style="font-size:12px; color:var(--text-muted);"></span>
+  </div>
+  <div id="map" style="width:100%; position:relative;"></div>
+  <div id="tip" style="position:absolute; pointer-events:none; opacity:0; transition:opacity .1s; background:var(--surface-2); border:0.5px solid var(--border-strong); border-radius:var(--radius); padding:8px 10px; font-size:12px; color:var(--text-primary); box-shadow:var(--shadow-popover); z-index:10; min-width:150px;"></div>
+  <div id="unmapped" style="margin-top:0.75rem; font-size:12px; color:var(--text-secondary); background:var(--surface-1); border-radius:var(--radius); padding:10px 12px;"></div>
+  <div class="foot" id="foot"></div>
+ </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script>
+const PAYLOAD="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";
+function b64buf(b){const s=atob(b);const u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u;}
+async function tryUnlock(pw){
+  const data=b64buf(PAYLOAD), salt=data.slice(0,16), iv=data.slice(16,28), ct=data.slice(28);
+  const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),{name:'PBKDF2'},false,['deriveKey']);
+  const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct);
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+const err=document.getElementById('err');
+async function attempt(){
+  err.textContent=''; const pw=document.getElementById('pw').value;
+  if(!pw){err.textContent='Enter the password.';return;}
+  try{ const P=await tryUnlock(pw); document.getElementById('gate').style.display='none'; document.getElementById('app').style.display='block'; initApp(P); }
+  catch(e){ err.textContent='Incorrect password.'; }
+}
+document.getElementById('unlock').addEventListener('click',attempt);
+document.getElementById('pw').addEventListener('keydown',e=>{if(e.key==='Enter')attempt();});
+
+let curDef='live', current='customers', defs, color, statesSel;
+const fmtUSD=v=>v>=1e6?'$'+(v/1e6).toFixed(2)+'M':v>=1e3?'$'+Math.round(v/1e3)+'K':'$'+Math.round(v);
+const fmtInt=v=>Math.round(v).toLocaleString();
+const metrics={
+ customers:{label:"Customers",acc:d=>d.n,note:D=>"share of all "+fmtInt(D.totalN)+" accounts"},
+ arr:{label:"Total ARR",acc:d=>d.arr,note:()=>"sum of live ARR per state"},
+ avg:{label:"Avg deal size",acc:d=>d.avg,note:()=>"ARR per customer"},
+ emp:{label:"Median employees",acc:d=>d.emp,note:()=>"median headcount; small-state values are noisy"}
+};
+const scheme=d3.schemeBlues[6], emptyFill='#F1EFE8';
+function D(){return defs[curDef];}
+function buildColor(){const vals=Object.values(D().data).map(metrics[current].acc).filter(v=>v>0); color=d3.scaleQuantile().domain(vals).range(scheme);}
+function fill(d){const rec=D().data[d.properties.name]; return rec?color(metrics[current].acc(rec)):emptyFill;}
+function kpis(){const d=D();const rows=[{l:"Accounts",v:fmtInt(d.totalN)},{l:"Total live ARR",v:fmtUSD(d.totalARR)},{l:"Avg deal size",v:fmtUSD(d.totalARR/d.totalN)},{l:"States covered",v:d.states+" incl. DC"}];
+ document.getElementById('kpis').innerHTML=rows.map(k=>`<div style="background:var(--surface-1); border-radius:var(--radius); padding:0.85rem 1rem;"><div style="font-size:13px; color:var(--text-secondary); margin-bottom:4px;">${k.l}</div><div style="font-size:24px; font-weight:500; color:var(--text-primary);">${k.v}</div></div>`).join('');}
+function legend(){const q=color.quantiles(),bins=[0,...q,d3.max(color.domain())];let h='<span style="margin-right:4px;">Low</span>';scheme.forEach((c,i)=>{h+=`<span title="${Math.round(bins[i])}–${Math.round(bins[i+1])}" style="width:26px; height:12px; background:${c}; display:inline-block;"></span>`;});h+='<span style="margin-left:4px;">High</span>';document.getElementById('legend').innerHTML=h;document.getElementById('metricNote').textContent=metrics[current].note(D());}
+function unmapped(){const d=D();document.getElementById('unmapped').innerHTML=`<i class="ti ti-map-pin-off" style="vertical-align:-2px; margin-right:6px;" aria-hidden="true"></i><strong style="font-weight:500;">${d.unmapN} accounts</strong> (${(d.unmapN/d.totalN*100).toFixed(1)}% · ${fmtUSD(d.unmapArr)} ARR) ${d.unmapText} — not shown on the map.`;}
+function styleBtns(){document.querySelectorAll('#defSel button').forEach(b=>{const on=b.dataset.d===curDef;b.style.background=on?'var(--fill-primary)':'transparent';b.style.color=on?'var(--on-primary)':'var(--text-primary)';b.style.borderColor=on?'var(--fill-primary)':'var(--border-strong)';});document.querySelectorAll('#metricSel button').forEach(b=>{const on=b.dataset.m===current;b.style.background=on?'var(--fill-primary)':'transparent';b.style.color=on?'var(--on-primary)':'var(--text-primary)';b.style.borderColor=on?'var(--fill-primary)':'var(--border-strong)';});}
+function repaint(){buildColor();kpis();legend();unmapped();styleBtns();document.getElementById('defNote').textContent=D().desc;if(statesSel)statesSel.transition().duration(200).attr('fill',fill);}
+function initApp(P){
+  document.getElementById('h1').textContent=P.title;
+  document.getElementById('sub').textContent=P.sub;
+  document.getElementById('foot').textContent=P.foot;
+  defs={live:Object.assign({raw:P.live},P.defs.live), tagged:Object.assign({raw:P.tagged},P.defs.tagged)};
+  Object.values(defs).forEach(dd=>{dd.data={};let n=0,arr=0;Object.keys(dd.raw).forEach(k=>{const r=dd.raw[k];dd.data[k]={n:r[0],arr:r[1],emp:r[2],avg:r[1]/r[0]};n+=r[0];arr+=r[1];});dd.totalN=n+dd.unmapN;dd.totalARR=arr+dd.unmapArr;dd.states=Object.keys(dd.raw).length;Object.keys(dd.data).forEach(k=>{dd.data[k].pct=dd.data[k].n/dd.totalN*100;});});
+  document.getElementById('defSel').innerHTML=Object.keys(defs).map(k=>`<button data-d="${k}" style="font-size:13px; padding:6px 12px;">${defs[k].label}</button>`).join('');
+  document.getElementById('metricSel').innerHTML=Object.keys(metrics).map(k=>`<button data-m="${k}" style="font-size:13px; padding:6px 12px;">${metrics[k].label}</button>`).join('');
+  document.querySelectorAll('#defSel button').forEach(b=>b.addEventListener('click',()=>{curDef=b.dataset.d;repaint();}));
+  document.querySelectorAll('#metricSel button').forEach(b=>b.addEventListener('click',()=>{current=b.dataset.m;repaint();}));
+  const tip=document.getElementById('tip'), mapEl=document.getElementById('map');
+  const svg=d3.select('#map').append('svg').attr('viewBox','0 0 900 520').attr('width','100%').style('height','auto');
+  const path=d3.geoPath(d3.geoAlbersUsa().scale(1080).translate([450,260]));
+  d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json').then(us=>{
+    const feats=topojson.feature(us,us.objects.states).features; buildColor();
+    statesSel=svg.selectAll('path.state').data(feats).join('path').attr('class','state').attr('d',path).attr('stroke','#fff').attr('stroke-width',0.6).attr('fill',fill).style('cursor','pointer')
+      .on('mousemove',function(ev,d){const rec=D().data[d.properties.name],r=mapEl.getBoundingClientRect();tip.style.left=Math.min(ev.clientX-r.left+14,r.width-170)+'px';tip.style.top=(ev.clientY-r.top+14)+'px';tip.style.opacity=1;
+        tip.innerHTML=rec?`<div style="font-weight:500; margin-bottom:4px;">${d.properties.name}</div><div style="display:flex; justify-content:space-between; gap:12px;"><span style="color:var(--text-secondary)">Customers</span><span>${fmtInt(rec.n)} (${rec.pct.toFixed(1)}%)</span></div><div style="display:flex; justify-content:space-between; gap:12px;"><span style="color:var(--text-secondary)">Total ARR</span><span>${fmtUSD(rec.arr)}</span></div><div style="display:flex; justify-content:space-between; gap:12px;"><span style="color:var(--text-secondary)">Avg deal</span><span>${fmtUSD(rec.avg)}</span></div><div style="display:flex; justify-content:space-between; gap:12px;"><span style="color:var(--text-secondary)">Median emp.</span><span>${fmtInt(rec.emp)}</span></div>`:`<div style="font-weight:500; margin-bottom:2px;">${d.properties.name}</div><div style="color:var(--text-secondary)">No customers</div>`;
+        d3.select(this).attr('stroke-width',1.6).attr('stroke','#0b0b0b').raise();})
+      .on('mouseleave',function(){tip.style.opacity=0;d3.select(this).attr('stroke-width',0.6).attr('stroke','#fff');});
+    repaint(); window.__ready=true;
+  }).catch(()=>{mapEl.innerHTML='<div style="color:var(--text-secondary); padding:1rem;">Map failed to load.</div>';});
+}
+</script>
+</body>
+</html>
